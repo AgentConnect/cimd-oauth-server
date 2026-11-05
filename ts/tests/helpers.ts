@@ -27,7 +27,7 @@ export async function tlsFixture() {
       "-subj",
       "/CN=identity.test",
       "-addext",
-      "subjectAltName=DNS:identity.test,DNS:other.test,DNS:auth.test,DNS:mcp.test",
+      "subjectAltName=DNS:identity.test,DNS:other.test,DNS:auth.test,DNS:mcp.test,DNS:localhost,IP:127.0.0.1",
     ],
     { stdio: "ignore" },
   );
@@ -50,10 +50,13 @@ export async function tlsFixture() {
       mode: "test",
       ca: cert,
       addresses: Object.fromEntries(
-        ["identity.test", "other.test", "auth.test", "mcp.test"].map((h) => [
-          h,
-          [{ address: "127.0.0.1", family: 4 }],
-        ]),
+        [
+          "identity.test",
+          "other.test",
+          "auth.test",
+          "mcp.test",
+          "localhost",
+        ].map((h) => [h, [{ address: "127.0.0.1", family: 4 }]]),
       ),
     });
   const http = (

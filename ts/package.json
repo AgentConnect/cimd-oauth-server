@@ -11,6 +11,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "tsx --test tests/*.test.ts",
     "test:postgres": "bash scripts/test-postgres.sh",
+    "test:dsh-native": "bash scripts/test-postgres.sh --dsh-native",
     "migrate": "node --env-file-if-exists=.env --import tsx scripts/migrate.ts",
     "configure": "node --env-file-if-exists=.env --import tsx scripts/configure.ts",
     "start:as": "node --env-file-if-exists=.env --import tsx examples/authorization-server/main.ts",

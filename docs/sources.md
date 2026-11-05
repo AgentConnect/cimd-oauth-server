@@ -23,3 +23,5 @@ Direct runtime dependencies are registry-pinned: `@modelcontextprotocol/sdk@1.29
 Node image `node:22.23.1-bookworm-slim` digest `sha256:6c74791e557ce11fc957704f6d4fe134a7bc8d6f5ca4403205b2966bd488f6b3` and PostgreSQL image `postgres:16.13-bookworm` digest `sha256:472efd9a66f2b2f1a5aeb18b28de74332e6ef88c2b93a1a5d812fb6db67a5f60` were obtained from the official Docker registry manifest API on 2026-11-06. Current executed database evidence uses isolated local PostgreSQL 14 binaries; it does not assert the Docker image was built or PostgreSQL 16 was exercised.
 
 全部 155 个 lock 条目的 primary npm registry SRI 已独立核对，resolved 均指向官方 tarball。SDK OAuth provider 完整发现与底层 Token 诊断的真实失败、配置和源文件摘要见 [兼容证据](../ts/docs/upstream-sdk-compatibility.md)。
+
+N2 必要模块组合显式消费本地 A/C/D source face 与真实 native addon，保留生产 registry lock。输入 source commit/dirty 与前后不变的关键 SHA-256、实际组件结果和 publication fixture 边界见 [N2 证据](../ts/docs/dsh-native-component.md)。

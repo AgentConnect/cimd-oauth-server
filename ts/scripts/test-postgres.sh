@@ -15,4 +15,8 @@ mkdir -m 700 "$test_root/socket"
 export DATABASE_URL="postgresql:///cimd_component?host=$test_root/socket"
 export NODE_ENV=test
 npm run migrate
-./node_modules/.bin/tsx --test tests/postgres.component.ts
+if [[ "${1:-}" == "--dsh-native" ]]; then
+  ./node_modules/.bin/tsx --tsconfig "${3:?Pass the Harness source root}/tsconfig.base.json" scripts/dsh-native-component.ts "${2:?Pass the ANP Identity source root}" "${3:?Pass the Harness source root}"
+else
+  ./node_modules/.bin/tsx --test tests/postgres.component.ts
+fi

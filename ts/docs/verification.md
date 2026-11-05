@@ -48,3 +48,9 @@ H review 发现：旧候选 `8aa12e6` 在 replay 阶段检查有效期后，可�
 现在 `issue`、`revoke`、`rejectVerified` 将 VerifiedClient 绑定到事务，并在所有 SQL 工作及锁等待之后、发送 COMMIT 前同步检查 issuer、metadata 到期、assertion 到期含固定 5 秒容差及未来 iat 窗口。检查失败抛 invalid_client 并原子回滚，不返回 Token，也不保留该事务产生的 replay/client/grant/token/metadata/audit 或撤销修改。
 
 新增用例分别使用真实政策行锁、Token 行锁和 audit 表锁，覆盖 metadata 到期、真实签名 assertion 接受窗口到期、撤销和已认证拒绝的到期回滚；正常有效的 invalid_scope 拒绝仍提交 replay。修后 `npm run test:postgres` 为 16 子项及父项共 TAP 17/17；`npm run typecheck`、`npm run build`、`npm run format:check` 通过。本修正未改 lock、migration 或网络解析代码，unit/network 9/9 沿用前次对应源码通过结果；没有为日志重复运行。
+
+## N2 必要组件链（2026-11-06）
+
+`npm run test:dsh-native -- <ANP Identity source root> <Harness source root>` 已通过：真实 C installed Context → A native 本地签名 → 官方 D MachineAuthenticationSession → E TLS AS/RS + 独立 PostgreSQL → SDK 两个 MCP 工具。Token 请求 1 次、远端撤销 1 次且 confirmed、唯一主体、D 加密凭据、C 越权 scope pre-token 拒绝及本地持久 disconnect fence 均通过。执行前后关键源文件摘要保持一致，测试时 A/C/D source 为已记录的 dirty source window；最终 network 摘要由 A owner 确认稳定。详细命令、输入摘要与 publication/保管/Context/source-face 边界见 [N2 原生组件证据](dsh-native-component.md)。
+
+这不是 System Test、产品 E2E 或 registry 安装成功；原上游动态/静态 OAuth provider 的实际不兼容结果保持。E 产品代码、依赖锁与迁移均未修改；本轮仅新增必要链路脚本、localhost 测试证书覆盖和文档。由于共享 TLS helper 修改，unit/network 本轮 9/9 重新通过。未顺带重复无改动的 PostgreSQL owner 全套。
