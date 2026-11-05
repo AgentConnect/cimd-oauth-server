@@ -58,3 +58,7 @@ H review 发现：旧候选 `8aa12e6` 在 replay 阶段检查有效期后，可�
 ## N5 私有候选镜像（2026-11-06）
 
 本机既有 Docker daemon 可用；按固定 Dockerfile/base digest、`b65e5b3` clean source 与正式 registry lock 构建唯一 local tag `cimd-oauth-server:dsh-identity-b65e5b3-candidate` 成功。本地 image/index ID 为 `sha256:80d385259333ecb882e3a17b2110157268275a77a6bb66cf5862cf1b705b9703`。五项 `--rm --network=none` 只读容器检查均符合预期：runtime imports 与 migration/license assets 退出 0；AS/RS/migration CLI 缺配置退出 1、没有启动服务或连接数据库。既有 4 个容器及 12 个 image tags 前后保持，检查容器残留 0；未清缓存、改 daemon、部署、运行系统/产品测试或 push。完整命令、digest、许可及原生 provenance 见 [N5 证据](n5-candidate-image.md)。构建产物仍绑定 b65e5b3；后续文档提交不改写镜像 source revision。
+
+## I02 独立客户端正向组件（2026-11-06）
+
+新增 primary 固定的 dev/test `oauth4webapi@3.8.8`，未修改其上游库，让它负责 OAuth2 discovery、`PrivateKeyJwt({key,kid})`、CC 表单、Token response 与撤销；正向无需 assertion hook。陌生独立 P-256/CIMD 在真实 TLS AS/RS + 独立 PG 下无预登记取得 Token，再由 SDK 完成两工具。实际 TTL 到期后重取验证新 iat/exp/jti、主体连续；resource/scope、重放/过期/错误 audience 及撤销归属负例通过。`npm run test:independent-client` 为 4 子项及父项 TAP 5/5；primary clean npm ci、typecheck/build/format 通过。原 SDK1.29 provider 不兼容证据保持，不把该结果当另一个独立 AS 或系统/产品测试。新锁 SHA `17060b69…595ea6`，b65 旧镜像/旧锁 provenance 不改写。详见 [独立客户端证据](independent-client.md)。

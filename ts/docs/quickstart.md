@@ -111,3 +111,5 @@ npm run admin -- invalidate-recovery
 Run cleanup periodically through your process manager. Keep bans and audit history; cleanup removes only expired protocol/cost state and tokens expired for more than a day. Before reopening restored data, follow [the recovery procedure](../../docs/security.md): invalidate policies/generations, reconcile trusted security facts, observe the full assertion window when replay completeness is unknown, and explicitly reconfigure policy only afterward.
 
 需要显式组合本地 A/C/D 源码时，使用 [N2 native 组件入口](dsh-native-component.md)。它不替代普通 registry/发布验证，也不运行 System Test 或产品 E2E。
+
+独立于 D 的标准客户端正向组件验证使用 `npm run test:independent-client`，见 [固定 oauth4webapi 组件证据](independent-client.md)。该 dev/test dependency 不进入服务运行时，且不替代独立 AS、System Test 或产品 E2E 验收。

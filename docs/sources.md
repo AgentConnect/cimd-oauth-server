@@ -25,3 +25,5 @@ Node image `node:22.23.1-bookworm-slim` digest `sha256:6c74791e557ce11fc957704f6
 全部 155 个 lock 条目的 primary npm registry SRI 已独立核对，resolved 均指向官方 tarball。SDK OAuth provider 完整发现与底层 Token 诊断的真实失败、配置和源文件摘要见 [兼容证据](../ts/docs/upstream-sdk-compatibility.md)。
 
 N2 必要模块组合显式消费本地 A/C/D source face 与真实 native addon，保留生产 registry lock。输入 source commit/dirty 与前后不变的关键 SHA-256、实际组件结果和 publication fixture 边界见 [N2 证据](../ts/docs/dsh-native-component.md)。
+
+I02 独立正向客户端使用 primary dev/test `oauth4webapi@3.8.8`（MIT），固定 v3.8.8 commit `916b97952dbf431d8b72f369840de54f5a286e4d`。SRI、已安装原样源码/license 摘要、准确 API 配置和实际 TLS/PG/MCP 结果见 [独立客户端证据](../ts/docs/independent-client.md)。它不属于运行时依赖；既有 b65 镜像与其旧 lock provenance 保留，未重建或换标。

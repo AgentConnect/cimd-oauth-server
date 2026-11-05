@@ -709,6 +709,13 @@
       "integrity": "sha512-mj7UPXE0jaqaOsukNZRUEfEi2AcL7C/vwmwcHV0O97eO1E1pxBZuyjlZrx5seTaNBg1U6+o35wpa35Qfcc+7ag=="
     },
     {
+      "path": "node_modules/oauth4webapi",
+      "version": "3.8.8",
+      "license": "MIT",
+      "resolved": "https://registry.npmjs.org/oauth4webapi/-/oauth4webapi-3.8.8.tgz",
+      "integrity": "sha512-8N28E+a/oxfXWBgOMt+ZP/JUf/XR+IFbvkAEPP3gznXOMv9BpAAwiIj0TFNz3tGTPc0ZQ8zmWBNgN1nAys0gng=="
+    },
+    {
       "path": "node_modules/object-assign",
       "version": "4.1.1",
       "license": "MIT",
