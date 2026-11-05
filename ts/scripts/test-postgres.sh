@@ -19,6 +19,10 @@ if [[ "${1:-}" == "--dsh-native" ]]; then
   ./node_modules/.bin/tsx --tsconfig "${3:?Pass the Harness source root}/tsconfig.base.json" scripts/dsh-native-component.ts "${2:?Pass the ANP Identity source root}" "${3:?Pass the Harness source root}"
 elif [[ "${1:-}" == "--independent-client" ]]; then
   ./node_modules/.bin/tsx --test tests/independent-client.component.ts
+elif [[ "${1:-}" == "--cache-window" ]]; then
+  ./node_modules/.bin/tsx --test tests/cache-window.component.ts
+elif [[ "${1:-}" == "--identity-http" ]]; then
+  ./node_modules/.bin/tsx --test tests/identity-http.component.ts
 else
   ./node_modules/.bin/tsx --test tests/postgres.component.ts
 fi

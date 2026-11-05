@@ -62,3 +62,17 @@ H review 发现：旧候选 `8aa12e6` 在 replay 阶段检查有效期后，可�
 ## I02 独立客户端正向组件（2026-11-06）
 
 新增 primary 固定的 dev/test `oauth4webapi@3.8.8`，未修改其上游库，让它负责 OAuth2 discovery、`PrivateKeyJwt({key,kid})`、CC 表单、Token response 与撤销；正向无需 assertion hook。陌生独立 P-256/CIMD 在真实 TLS AS/RS + 独立 PG 下无预登记取得 Token，再由 SDK 完成两工具。实际 TTL 到期后重取验证新 iat/exp/jti、主体连续；resource/scope、重放/过期/错误 audience 及撤销归属负例通过。`npm run test:independent-client` 为 4 子项及父项 TAP 5/5；primary clean npm ci、typecheck/build/format 通过。原 SDK1.29 provider 不兼容证据保持，不把该结果当另一个独立 AS 或系统/产品测试。新锁 SHA `17060b69…595ea6`，b65 旧镜像/旧锁 provenance 不改写。详见 [独立客户端证据](independent-client.md)。
+
+## I02 独立 AS 产品组件（2026-11-06）
+
+固定 primary dev/test `oidc-provider@9.13.3` 原样实现原生 CIMD→client authentication→CC→opaque Token/内省/撤销；没有复用本仓 AS/解析器/Token handler。独立RS SDK application通过真实受认证内省核对原生 ClientCredentials.kind 官方hook派生的 grant_type，不伪造subject_type/sub。`npm run test:independent-as` 4子项及父项 TAP5/5，涵盖无预建Agent client/无authorize/DCR/callback的首次准入、实际两工具、TTL到期新取、resource/scope/RS内省权限/工具授权及撤销。clean primary npm ci、typecheck/build/format通过；产品自带MemoryAdapter仅隔离测试，不等同持久化或多实例部署。最终实际 C/A/B 注册发布→Desktop0.1.5-rc.2 D→该独立 AS/RS lane 已完整通过，关键源前后摘要一致；D 执行时 production 冻结而 commit pending，dirty 状态如实记录。当前lock SHA ccc0f1d1…9e770d，旧b65 image/provenance不改。细节见 [独立AS产品证据](independent-as.md)。
+
+## 最终独立 AS / 实际 AWiki publisher 与 S09（2026-11-06）
+
+`test:independent-as-native` 完整通过：实际 C approval/A native/B production registration、Registry、enrollment、prepare-bind-activate-readback，原 bytes 经 TLS → Desktop0.1.5-rc.2 D → 未修改 oidc-provider9.13.3 → 独立 RS 实际 MCP 两工具。同 AS 接受独立自托管 P-256/CIMD publisher；8 秒实际 expiry 后 D 新签重取、AS scope 拒绝、最新 native Token destroy/digest 匹配、本地 fence 通过。D 多次签发的 aggregate remote state 保守 unconfirmed，未假称全历史 confirmed。管理桥/MemoryAdapter/localhost/keyring 与执行时 D dirty source 边界见 [独立 AS 证据](independent-as.md)。
+
+新增 `test:cache-window` 用默认生产 60 秒 TTL/真实时间/TLS/PG 完整通过 1/1，old key 删除后窗口内 fresh proof 接受、TTL 后 fresh proof 拒绝（此时 JWT 仍余60秒），new key/主体连续、旧300秒 Token仍active；精确时长、GET计数、秒边界、重试与原生artifact见 [S09证据](cache-window.md)。这些新增 focused lanes 没有顺带重跑旧 owner 全套，也不代表 System/产品 E2E、共享部署或新镜像通过。
+
+## S01/S02/S11 直接 owning HTTP 矩阵（2026-11-06）
+
+A 新增单一 `tests/identity-http.component.ts`，E 接 `npm run test:identity-http`，新独立PG/TLS runner实际执行最终 source SHA `124fb95d2c422ba824ee7137f52af965ea73762d93cdc61b0532e3b82bb3762d`：5子项及父项 TAP6/6，通过且执行前后源SHA相同。合法 ES256 签名分别错 iss/sub/form client_id 与真实 P384/ES384 合法签名 wrong-alg 经真实 Token HTTP 拒绝；分别先独立 jwtVerify 证明密码签名有效，整个issuer namespace的clients/grants/tokens/snapshots/replay为0，仅保留有界 prefetch bucket。catalog-only 正向 Token/真实MCP初始化与catalog调用成功后，伪路由header宣称tools/list而body调用identity_get，实际body门禁返回403。它是本仓 owning安全证据，不计独立client/AS。原生结果 `.artifacts/identity-http-current/{run-final.tap,result.json,source-before.txt,source-after.txt,source-and-results.json}`；未顺带重跑全owner suite。

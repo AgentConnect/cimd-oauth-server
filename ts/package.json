@@ -11,6 +11,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "tsx --test tests/*.test.ts",
     "test:postgres": "bash scripts/test-postgres.sh",
+    "test:cache-window": "bash scripts/test-postgres.sh --cache-window",
     "test:independent-client": "bash scripts/test-postgres.sh --independent-client",
     "test:dsh-native": "bash scripts/test-postgres.sh --dsh-native",
     "migrate": "node --env-file-if-exists=.env --import tsx scripts/migrate.ts",
@@ -20,7 +21,11 @@
     "identity:init": "node --env-file-if-exists=.env --import tsx examples/self-hosted-identity/init.ts",
     "start:identity": "node --env-file-if-exists=.env --import tsx examples/self-hosted-identity/main.ts",
     "admin": "node --env-file-if-exists=.env --import tsx scripts/admin.ts",
-    "format:check": "prettier --check packages examples scripts tests docs package.json tsconfig.json compose.yaml"
+    "format:check": "prettier --check packages examples scripts tests docs package.json tsconfig.json compose.yaml",
+    "test:independent-as": "NODE_ENV=test tsx --test tests/independent-as.component.ts",
+    "test:independent-as-native": "bash scripts/test-independent-as-native.sh",
+    "test:registered-publisher": "NODE_ENV=test tsx scripts/registered-publisher.ts",
+    "test:identity-http": "bash scripts/test-postgres.sh --identity-http"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.29.0",
@@ -35,6 +40,7 @@
     "@types/node": "22.19.15",
     "@types/pg": "8.16.0",
     "oauth4webapi": "3.8.8",
+    "oidc-provider": "9.13.3",
     "prettier": "3.6.2",
     "tsx": "4.21.0",
     "typescript": "5.9.3"

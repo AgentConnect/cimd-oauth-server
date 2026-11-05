@@ -113,3 +113,7 @@ Run cleanup periodically through your process manager. Keep bans and audit histo
 需要显式组合本地 A/C/D 源码时，使用 [N2 native 组件入口](dsh-native-component.md)。它不替代普通 registry/发布验证，也不运行 System Test 或产品 E2E。
 
 独立于 D 的标准客户端正向组件验证使用 `npm run test:independent-client`，见 [固定 oauth4webapi 组件证据](independent-client.md)。该 dev/test dependency 不进入服务运行时，且不替代独立 AS、System Test 或产品 E2E 验收。
+
+独立 AS 产品的原生 CIMD/CC 组件使用 `npm run test:independent-as`；C/A→实际 D source→该独立 AS 的组合入口为 `npm run test:independent-as-native -- <identity source> <D source>`。见 [产品与夹具边界](independent-as.md)，正式 source 记录以对应 lane 最终证据为准。
+
+真实默认 JWKS 传播窗口检查使用 `npm run test:cache-window`（实际约60秒，不改生产TTL），见 [S09时长与GET计数](cache-window.md)。
