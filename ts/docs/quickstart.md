@@ -62,7 +62,7 @@ The MCP process needs only `OAUTH_ISSUER`, `INTROSPECTION_ENDPOINT`, `MCP_RESOUR
 
 ## Private local container reference
 
-`Dockerfile` and `compose.yaml` pin public base images by version and digest. Registry manifest digests were checked on 2026-11-06. The image is built only as `cimd-oauth-server:local`. Docker build/container deployment was not run during current repository component verification.
+`Dockerfile` and `compose.yaml` pin public base images by version and digest. Registry manifest digests were checked on 2026-11-06. The image is built only as `cimd-oauth-server:local`. N5 已完成固定源码候选镜像构建及禁网 runtime/asset/fail-closed 检查，见 [候选镜像证据](n5-candidate-image.md)；配置完整的容器服务部署仍未执行。
 
 Set `AS_TLS_DIRECTORY` and `RS_TLS_DIRECTORY` to directories readable by container UID 1000, each containing the appropriate `key.pem`/`cert.pem`. Configure the public reverse proxy to reach the loopback-mapped 8443/9443 ports; the RS still reaches the AS through its configured public HTTPS introspection origin. Internal Docker hostnames/private addresses are not an outbound network exception.
 
