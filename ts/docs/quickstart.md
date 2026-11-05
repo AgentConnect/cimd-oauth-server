@@ -117,3 +117,5 @@ Run cleanup periodically through your process manager. Keep bans and audit histo
 独立 AS 产品的原生 CIMD/CC 组件使用 `npm run test:independent-as`；C/A→实际 D source→该独立 AS 的组合入口为 `npm run test:independent-as-native -- <identity source> <D source>`。见 [产品与夹具边界](independent-as.md)，正式 source 记录以对应 lane 最终证据为准。
 
 真实默认 JWKS 传播窗口检查使用 `npm run test:cache-window`（实际约60秒，不改生产TTL），见 [S09时长与GET计数](cache-window.md)。
+
+实际进程/备份恢复、真实C/B key旋转和共享PAP/MCP模块分别使用test:process-recovery、test:rotation-native与test:shared-protocol；证据见process-recovery.md、key-id-budget.md、shared-protocol.md。私有运行包使用npm run pack:runtime，按runtime-package.md运行built入口。

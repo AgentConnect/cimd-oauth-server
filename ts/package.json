@@ -25,7 +25,16 @@
     "test:independent-as": "NODE_ENV=test tsx --test tests/independent-as.component.ts",
     "test:independent-as-native": "bash scripts/test-independent-as-native.sh",
     "test:registered-publisher": "NODE_ENV=test tsx scripts/registered-publisher.ts",
-    "test:identity-http": "bash scripts/test-postgres.sh --identity-http"
+    "test:identity-http": "bash scripts/test-postgres.sh --identity-http",
+    "test:process-recovery": "bash scripts/test-postgres.sh --process-recovery",
+    "test:shared-protocol": "bash scripts/test-postgres.sh --shared-protocol",
+    "test:rotation-native": "bash scripts/test-postgres.sh --rotation-native",
+    "start:as:built": "node --env-file-if-exists=.env dist/examples/authorization-server/main.js",
+    "start:mcp:built": "node --env-file-if-exists=.env dist/examples/minimal-mcp-server/main.js",
+    "migrate:built": "node --env-file-if-exists=.env dist/scripts/migrate.js",
+    "configure:built": "node --env-file-if-exists=.env dist/scripts/configure.js",
+    "admin:built": "node --env-file-if-exists=.env dist/scripts/admin.js",
+    "pack:runtime": "node scripts/pack-runtime.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.29.0",
@@ -44,5 +53,23 @@
     "prettier": "3.6.2",
     "tsx": "4.21.0",
     "typescript": "5.9.3"
-  }
+  },
+  "license": "UNLICENSED",
+  "files": [
+    "dist/packages/oauth-core",
+    "dist/packages/oauth-as",
+    "dist/packages/oauth-rs",
+    "dist/packages/store-postgres",
+    "dist/examples/authorization-server",
+    "dist/examples/minimal-mcp-server",
+    "dist/examples/self-hosted-identity",
+    "dist/examples/config.js",
+    "dist/scripts/migrate.js",
+    "dist/scripts/configure.js",
+    "dist/scripts/admin.js",
+    "docs/runtime-package.md",
+    "docs/dependency-licenses.json",
+    ".env.example",
+    "npm-shrinkwrap.json"
+  ]
 }

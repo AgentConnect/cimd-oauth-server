@@ -35,9 +35,9 @@ A Buffer BOM bypass found by H was corrected with `TextDecoder(ignoreBOM:true)` 
 
 Observed failures were corrected before the current passing runs: Node 22 lookup callbacks can request `all=true` and require address arrays; rate-bucket SQL needed explicit bigint casts; minute/hour bucket cleanup now uses explicit expiry. Long tuple-index risk was removed with a SHA-256 canonical grant key while preserving exact fields and an integrity check.
 
-These tests use in-process component fixtures and separate TLS listeners/origins, not full product E2E and not remote acceptance. AS/RS production startup commands are independent; multi-process production deployment and configured Docker service deployment have not been exercised; N5 image construction and offline entrypoint checks are recorded separately. The COMMIT-loss case is explicit fault injection against a real committed transaction, not a network partition drill. Recovery validation checks refusal/generations, not a full backup restoration. The B compatibility fixture is synthetic/public and does not prove a live AWiki publication or DID binding.
+These tests use in-process component fixtures and separate TLS listeners/origins, not full product E2E and not remote acceptance. AS/RS production startup commands are independent; multi-process production deployment and configured Docker service deployment have not been exercised; N5 image construction and offline entrypoint checks are recorded separately. The COMMIT-loss case is explicit fault injection against a real committed transaction, not a network partition drill. The original early recovery check covered refusal/generations; the later process-recovery lane below additionally performs actual owned pg_dump/restore and the full 71-second window. The B compatibility fixture is synthetic/public and does not prove a live AWiki publication or DID binding.
 
-Not run: System Test, DSH Web/product E2E, DSH↔this AS live acceptance, other-platform tests, remote deployment/restarts, configured container service acceptance, external independent-AS acceptance, production custody review, full backup/restore drill or public/private registry publication. These are outside this component task's authorization or require H-owned controlled acceptance inputs. No HTML report was generated for ordinary component checks. Tests never point to awiki.info or a shared database, and no token/assertion/private key/RS secret is written to logs or Git.
+Not run: System Test, DSH Web/product E2E, DSH↔this AS live acceptance, other-platform tests, remote deployment/restarts, configured container service acceptance, remote independent-AS deployment, production custody review, production backup/restore drill or public/private registry publication. These are outside this component task's authorization or require H-owned controlled acceptance inputs. No HTML report was generated for ordinary component checks. Tests never point to awiki.info or a shared database, and no token/assertion/private key/RS secret is written to logs or Git.
 
 The official upstream dynamic/static OAuth provider auth attempts fail on real CC-only metadata. Lower-level unmodified fetchToken diagnostics also fail because both providers omit explicit client_id; dynamic JWT additionally omits kid. These expected-failure assertions pass as compatibility regression checks, but neither OAuth provider leg is a successful independent authentication acceptance. See the dedicated compatibility evidence for primary registry SRI and exact source digests.
 
@@ -76,3 +76,13 @@ H review 发现：旧候选 `8aa12e6` 在 replay 阶段检查有效期后，可�
 ## S01/S02/S11 直接 owning HTTP 矩阵（2026-11-06）
 
 A 新增单一 `tests/identity-http.component.ts`，E 接 `npm run test:identity-http`，新独立PG/TLS runner实际执行最终 source SHA `124fb95d2c422ba824ee7137f52af965ea73762d93cdc61b0532e3b82bb3762d`：5子项及父项 TAP6/6，通过且执行前后源SHA相同。合法 ES256 签名分别错 iss/sub/form client_id 与真实 P384/ES384 合法签名 wrong-alg 经真实 Token HTTP 拒绝；分别先独立 jwtVerify 证明密码签名有效，整个issuer namespace的clients/grants/tokens/snapshots/replay为0，仅保留有界 prefetch bucket。catalog-only 正向 Token/真实MCP初始化与catalog调用成功后，伪路由header宣称tools/list而body调用identity_get，实际body门禁返回403。它是本仓 owning安全证据，不计独立client/AS。原生结果 `.artifacts/identity-http-current/{run-final.tap,result.json,source-before.txt,source-after.txt,source-and-results.json}`；未顺带重跑全owner suite。
+
+## 最终补充模块与生产兼容修复
+
+完整DID key ID预算已由错误128对齐C/B合同1024，JWT/JWKS双入口有界拒空/控制/超长；新kid边界加受影响network定向4/4，D原真实132材料rotation/PG/native完整exit0，旧材料不改。见key-id-budget.md，旧失败保留。该生产修改不改算法、私钥拒绝、issuer/time/replay、64KiB/8keys/16KiB限制。
+
+I03/S14实际分Node进程、HTTP内省、重启、pg_dump→另一owned DB restore及worst future-iat真实71秒窗口已exit0；65秒仍可认证的反例、operator ban、unknown disabled、RS无DB、AS offline/RS503、精确清理均有原生记录。见process-recovery.md，不假称生产DB角色、自动DBA回滚检测或两个listener物理停。
+
+P01/P28同native DID/CIMD的F NoAS Session→关闭PAP组件→独立MCP Context首次CC/两工具/到期新取exit0，绑定新D af6与F7325；实际PAP Token0/wire scopes[]、publication fixture及source历史边界见shared-protocol.md。仅owner新case独立运行，未重复无影响全suite。
+
+最终runtime pack采用明确files白名单与从registry lock派生的npm-shrinkwrap，排除本地logs/artifacts/source integration。原dry-run确实带入验证日志，已修为白名单；built入口及锁包验证见runtime-package.md。旧b65 image保持历史，不冒充新源码。

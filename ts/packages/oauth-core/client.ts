@@ -2,6 +2,17 @@ import { calculateJwkThumbprint, importJWK, jwtVerify, type JWK } from "jose";
 import { SafeHttpFetcher } from "./fetch.js";
 import { digest, httpsUrl, object, strictJson } from "./parse.js";
 import { fail } from "./errors.js";
+// Match the shared publication contract while retaining bounded, exact key identifiers.
+const MAX_KEY_ID_LENGTH = 1024;
+function validKeyId(value: unknown): value is string {
+  return (
+    typeof value === "string" &&
+    value.length > 0 &&
+    value.length <= MAX_KEY_ID_LENGTH &&
+    value.trim().length > 0 &&
+    !/\p{Cc}/u.test(value)
+  );
+}
 const verified = Symbol("verified-client");
 export type VerifiedClient = Readonly<{
   [verified]: true;
@@ -117,9 +128,7 @@ export class ClientAuthenticator {
         typeof k.y !== "string" ||
         !/^[A-Za-z0-9_-]{43}$/.test(k.x) ||
         !/^[A-Za-z0-9_-]{43}$/.test(k.y) ||
-        typeof k.kid !== "string" ||
-        !k.kid ||
-        k.kid.length > 128 ||
+        !validKeyId(k.kid) ||
         kids.has(k.kid) ||
         ["d", "p", "q", "dp", "dq", "qi", "k"].some((s) => s in k) ||
         (k.alg !== undefined && k.alg !== "ES256") ||
@@ -157,7 +166,7 @@ export class ClientAuthenticator {
     const claims = object(strictJson(Buffer.from(parts[1]!, "base64url")));
     if (
       header.alg !== "ES256" ||
-      typeof header.kid !== "string" ||
+      !validKeyId(header.kid) ||
       Object.keys(header).some((k) => !["alg", "kid", "typ"].includes(k)) ||
       (header.typ !== undefined &&
         !["JWT", "client-authentication+jwt"].includes(header.typ as string))

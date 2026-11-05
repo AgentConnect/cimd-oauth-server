@@ -23,6 +23,12 @@ elif [[ "${1:-}" == "--cache-window" ]]; then
   ./node_modules/.bin/tsx --test tests/cache-window.component.ts
 elif [[ "${1:-}" == "--identity-http" ]]; then
   ./node_modules/.bin/tsx --test tests/identity-http.component.ts
+elif [[ "${1:-}" == "--process-recovery" ]]; then
+  POSTGRES_BIN_DIR="$pg_bin" ./node_modules/.bin/tsx scripts/process-recovery-component.ts
+elif [[ "${1:-}" == "--shared-protocol" ]]; then
+  ./node_modules/.bin/tsx --tsconfig "${3:?Pass Harness source root}/tsconfig.base.json" scripts/shared-protocol-component.ts "${2:?Pass identity source root}" "${3}" "${4:?Pass PAP source root}"
+elif [[ "${1:-}" == "--rotation-native" ]]; then
+  ./node_modules/.bin/tsx --tsconfig "${3:?Pass Harness source root}/tsconfig.base.json" scripts/rotation-native-component.ts "${2:?Pass identity source root}" "${3}"
 else
   ./node_modules/.bin/tsx --test tests/postgres.component.ts
 fi
