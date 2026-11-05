@@ -907,6 +907,173 @@ test("Postgres authoritative transactions, independent TLS AS/RS, and actual MCP
       },
     );
     await t.test(
+      "commit rechecks metadata/assertion expiry after real PostgreSQL lock waits and atomically rolls back",
+      async () => {
+        const { digest } = await import("../packages/oauth-core/parse.js");
+        const duringLock = async (
+          lockSql: string,
+          lockValues: unknown[],
+          queryPrefix: string,
+          expires: number,
+          start: () => Promise<unknown>,
+        ) => {
+          const blocker = await pool2.connect();
+          let outcome:
+            | Promise<{ value?: unknown; error?: unknown }>
+            | undefined;
+          try {
+            await blocker.query("BEGIN");
+            await blocker.query(lockSql, lockValues);
+            outcome = start().then(
+              (value) => ({ value }),
+              (error) => ({ error }),
+            );
+            let waiting = false;
+            for (let attempt = 0; attempt < 40; attempt++) {
+              const state = await pool2.query(
+                "SELECT 1 FROM pg_stat_activity WHERE datname=current_database() AND wait_event_type='Lock' AND query LIKE $1",
+                [queryPrefix + "%"],
+              );
+              if (state.rowCount) {
+                waiting = true;
+                break;
+              }
+              await new Promise((resolve) => setTimeout(resolve, 10));
+            }
+            assert.equal(waiting, true);
+            await new Promise((resolve) =>
+              setTimeout(
+                resolve,
+                Math.max(0, expires * 1000 + 50 - Date.now()),
+              ),
+            );
+            await blocker.query("COMMIT");
+            const result = await outcome;
+            assert.ok(Date.now() / 1000 >= expires);
+            assert.ok(result.error instanceof Error);
+            assert.equal(result.error.message, "invalid_client");
+          } finally {
+            await blocker.query("ROLLBACK");
+            blocker.release();
+            await outcome;
+          }
+        };
+        const assertNoReplay = async (
+          v: Awaited<ReturnType<typeof verified>>,
+        ) =>
+          assert.equal(
+            (
+              await pool.query(
+                "SELECT count(*)::integer AS n FROM assertion_replays WHERE namespace=$1 AND client_id=$2 AND jti_digest=$3",
+                [store.namespace, v.clientId, v.jtiDigest],
+              )
+            ).rows[0].n,
+            0,
+          );
+        for (const evidence of ["metadata", "assertion"] as const) {
+          const id = identityOrigin + "/commit-" + evidence;
+          const now = Math.floor(Date.now() / 1000);
+          const authenticated =
+            evidence === "assertion"
+              ? await authenticator.authenticate(
+                  id,
+                  await sign(id, crypto.randomUUID(), {
+                    iat: now - 30,
+                    exp: now - 3,
+                  }),
+                )
+              : await verified(id);
+          const v =
+            evidence === "metadata"
+              ? Object.freeze({
+                  ...authenticated,
+                  metadataExpires: Math.floor(Date.now() / 1000) + 1,
+                })
+              : authenticated;
+          const expires =
+            evidence === "metadata" ? v.metadataExpires : v.expires + 5;
+          await duringLock(
+            "SELECT 1 FROM admission_policies WHERE namespace=$1 AND resource=$2 FOR UPDATE",
+            [store.namespace, resource],
+            "SELECT * FROM admission_policies",
+            expires,
+            () => store.issue(v, resource, ["catalog.read"]),
+          );
+          await assertNoReplay(v);
+          for (const table of [
+            "clients",
+            "machine_grants",
+            "access_tokens",
+            "metadata_snapshots",
+          ])
+            assert.equal(
+              (
+                await pool.query(
+                  `SELECT count(*)::integer AS n FROM ${table} WHERE namespace=$1 AND client_id=$2`,
+                  [store.namespace, id],
+                )
+              ).rows[0].n,
+              0,
+            );
+          assert.equal(
+            (
+              await pool.query(
+                "SELECT count(*)::integer AS n FROM audit_events WHERE namespace=$1 AND client_ref=$2",
+                [store.namespace, digest(id)],
+              )
+            ).rows[0].n,
+            0,
+          );
+        }
+        const revokeId = identityOrigin + "/commit-revoke";
+        const issued = await store.issue(await verified(revokeId), resource, [
+          "catalog.read",
+        ]);
+        const revokeProof = Object.freeze({
+          ...(await verified(revokeId)),
+          metadataExpires: Math.floor(Date.now() / 1000) + 1,
+        });
+        await duringLock(
+          "SELECT 1 FROM access_tokens WHERE digest=$1 FOR UPDATE",
+          [digest(issued.access_token)],
+          "UPDATE access_tokens SET revoked_at=now()",
+          revokeProof.metadataExpires,
+          () => store.revoke(revokeProof, issued.access_token),
+        );
+        await assertNoReplay(revokeProof);
+        assert.equal(
+          (await store.introspect(rsId, secret, issued.access_token)).active,
+          true,
+        );
+        const denialProof = Object.freeze({
+          ...(await verified(identityOrigin + "/commit-denial")),
+          metadataExpires: Math.floor(Date.now() / 1000) + 1,
+        });
+        await duringLock(
+          "LOCK TABLE audit_events IN SHARE MODE",
+          [],
+          "INSERT INTO audit_events",
+          denialProof.metadataExpires,
+          () => store.rejectVerified(denialProof, "invalid_scope"),
+        );
+        await assertNoReplay(denialProof);
+        const normal = await verified(identityOrigin + "/commit-normal-denial");
+        await assert.rejects(
+          store.rejectVerified(normal, "invalid_scope"),
+          /invalid_scope/,
+        );
+        assert.equal(
+          (
+            await pool.query(
+              "SELECT count(*)::integer AS n FROM assertion_replays WHERE namespace=$1 AND client_id=$2 AND jti_digest=$3",
+              [store.namespace, normal.clientId, normal.jtiDigest],
+            )
+          ).rows[0].n,
+          1,
+        );
+      },
+    );
+    await t.test(
       "wrong signature never creates a machine identity",
       async () => {
         await store.configureRequestLimits({

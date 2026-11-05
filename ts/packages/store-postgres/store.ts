@@ -162,15 +162,17 @@ export class PostgresStore {
       `${this.namespace}:${clientId}`,
     ]);
   }
-  private async replay(c: PoolClient, v: VerifiedClient): Promise<boolean> {
+  private verifiedCurrent(v: VerifiedClient): boolean {
     const now = Math.floor(Date.now() / 1000);
-    if (
-      v.issuer !== this.issuer ||
-      v.metadataExpires <= now ||
-      v.expires + 5 <= now ||
-      v.issuedAt > now + 5
-    )
-      return false;
+    return (
+      v.issuer === this.issuer &&
+      v.metadataExpires > now &&
+      v.expires + 5 > now &&
+      v.issuedAt <= now + 5
+    );
+  }
+  private async replay(c: PoolClient, v: VerifiedClient): Promise<boolean> {
+    if (!this.verifiedCurrent(v)) return false;
     const r = await c.query(
       `INSERT INTO assertion_replays(namespace,client_id,jti_digest,expires_at) VALUES($1,$2,$3,to_timestamp($4)) ON CONFLICT DO NOTHING RETURNING jti_digest`,
       [this.namespace, v.clientId, v.jtiDigest, v.expires + 5],
@@ -180,6 +182,7 @@ export class PostgresStore {
   private async transaction<T>(
     clientId: string,
     f: (c: PoolClient) => Promise<T>,
+    verified?: VerifiedClient,
   ): Promise<T> {
     const c = await this.pool.connect();
     let committed = false;
@@ -189,6 +192,10 @@ export class PostgresStore {
       await c.query("SET LOCAL lock_timeout='3s'");
       await this.lock(c, clientId);
       const value = await f(c);
+      // Resource/audit/token row locks may outlive the evidence checked by replay().
+      // Expired proof rolls back every side effect, including replay and generated token state.
+      if (verified && !this.verifiedCurrent(verified))
+        fail("invalid_client", 401);
       await c.query("COMMIT");
       committed = true;
       return value;
@@ -216,149 +223,153 @@ export class PostgresStore {
     resource: string,
     requested: string[],
   ): Promise<TokenResult> {
-    const result = await this.transaction(v.clientId, async (c) => {
-      if (!(await this.replay(c, v))) return { error: "invalid_client" };
-      const deny = async (error: string, generation?: string) => {
-        await this.audit(c, v.clientId, error, generation);
-        return { error };
-      };
-      if (
-        (
+    const result = await this.transaction(
+      v.clientId,
+      async (c) => {
+        if (!(await this.replay(c, v))) return { error: "invalid_client" };
+        const deny = async (error: string, generation?: string) => {
+          await this.audit(c, v.clientId, error, generation);
+          return { error };
+        };
+        if (
+          (
+            await c.query(
+              "SELECT blocked FROM client_blocks WHERE namespace=$1 AND client_id=$2",
+              [this.namespace, v.clientId],
+            )
+          ).rows[0]?.blocked
+        )
+          return deny("unauthorized_client");
+        try {
+          requested = scopes(requested.join(" "));
+        } catch {
+          return deny("invalid_scope");
+        }
+        const p = (
           await c.query(
-            "SELECT blocked FROM client_blocks WHERE namespace=$1 AND client_id=$2",
-            [this.namespace, v.clientId],
+            "SELECT * FROM admission_policies WHERE namespace=$1 AND resource=$2 FOR UPDATE",
+            [this.namespace, resource],
           )
-        ).rows[0]?.blocked
-      )
-        return deny("unauthorized_client");
-      try {
-        requested = scopes(requested.join(" "));
-      } catch {
-        return deny("invalid_scope");
-      }
-      const p = (
-        await c.query(
-          "SELECT * FROM admission_policies WHERE namespace=$1 AND resource=$2 FOR UPDATE",
-          [this.namespace, resource],
-        )
-      ).rows[0];
-      if (!p?.enabled) return deny("invalid_target");
-      if (!requested.length || requested.some((s) => !p.scopes.includes(s)))
-        return deny("invalid_scope", p.generation);
-      const minute = Math.floor(Date.now() / 60000);
-      const hour = Math.floor(Date.now() / 3600000);
-      const consume = async (
-        bucket: string,
-        window: number,
-        limit: number,
-        seconds = 60,
-      ) => {
-        const r = await c.query(
-          `INSERT INTO rate_buckets(namespace,bucket,window_start,expires_at,count) VALUES($1,$2,$3,to_timestamp((($3::bigint+1)*$4::bigint)::double precision),1) ON CONFLICT(namespace,bucket,window_start) DO UPDATE SET count=rate_buckets.count+1 RETURNING count`,
-          [this.namespace, bucket, window, seconds],
-        );
-        return r.rows[0].count <= limit;
-      };
-      if (
-        !(await consume(
-          `global:${digest(resource)}`,
-          minute,
-          p.max_requests_minute,
-        )) ||
-        !(await consume(
-          `client:${digest(v.clientId)}:${digest(resource)}`,
-          minute,
-          p.max_requests_client_minute,
-        ))
-      )
-        return deny("rate_limited", p.generation);
-      let client = (
-        await c.query(
-          "SELECT * FROM clients WHERE namespace=$1 AND client_id=$2 FOR UPDATE",
-          [this.namespace, v.clientId],
-        )
-      ).rows[0];
-      if (client && !client.enabled)
-        return deny("unauthorized_client", p.generation);
-      if (!client) {
+        ).rows[0];
+        if (!p?.enabled) return deny("invalid_target");
+        if (!requested.length || requested.some((s) => !p.scopes.includes(s)))
+          return deny("invalid_scope", p.generation);
+        const minute = Math.floor(Date.now() / 60000);
+        const hour = Math.floor(Date.now() / 3600000);
+        const consume = async (
+          bucket: string,
+          window: number,
+          limit: number,
+          seconds = 60,
+        ) => {
+          const r = await c.query(
+            `INSERT INTO rate_buckets(namespace,bucket,window_start,expires_at,count) VALUES($1,$2,$3,to_timestamp((($3::bigint+1)*$4::bigint)::double precision),1) ON CONFLICT(namespace,bucket,window_start) DO UPDATE SET count=rate_buckets.count+1 RETURNING count`,
+            [this.namespace, bucket, window, seconds],
+          );
+          return r.rows[0].count <= limit;
+        };
         if (
           !(await consume(
-            `new:${digest(resource)}`,
-            hour,
-            p.max_new_clients_hour,
-            3600,
+            `global:${digest(resource)}`,
+            minute,
+            p.max_requests_minute,
+          )) ||
+          !(await consume(
+            `client:${digest(v.clientId)}:${digest(resource)}`,
+            minute,
+            p.max_requests_client_minute,
           ))
         )
           return deny("rate_limited", p.generation);
-        client = (
+        let client = (
           await c.query(
-            "INSERT INTO clients(namespace,client_id,subject) VALUES($1,$2,$3) RETURNING *",
-            [this.namespace, v.clientId, randomUUID()],
+            "SELECT * FROM clients WHERE namespace=$1 AND client_id=$2 FOR UPDATE",
+            [this.namespace, v.clientId],
           )
         ).rows[0];
-      }
-      await c.query(
-        `INSERT INTO metadata_snapshots(namespace,client_id,digest,jwks_digest,thumbprint,expires_at) VALUES($1,$2,$3,$4,$5,to_timestamp($6)) ON CONFLICT DO NOTHING`,
-        [
-          this.namespace,
-          v.clientId,
-          v.metadataDigest,
-          v.jwksDigest,
-          v.thumbprint,
-          v.metadataExpires,
-        ],
-      );
-      const grant = (
+        if (client && !client.enabled)
+          return deny("unauthorized_client", p.generation);
+        if (!client) {
+          if (
+            !(await consume(
+              `new:${digest(resource)}`,
+              hour,
+              p.max_new_clients_hour,
+              3600,
+            ))
+          )
+            return deny("rate_limited", p.generation);
+          client = (
+            await c.query(
+              "INSERT INTO clients(namespace,client_id,subject) VALUES($1,$2,$3) RETURNING *",
+              [this.namespace, v.clientId, randomUUID()],
+            )
+          ).rows[0];
+        }
         await c.query(
-          `INSERT INTO machine_grants(id,namespace,client_id,resource,scopes,policy_generation,grant_key) VALUES($1,$2,$3,$4,$5,$6,$7)
-        ON CONFLICT(namespace,grant_key) DO UPDATE SET policy_generation=EXCLUDED.policy_generation RETURNING *`,
+          `INSERT INTO metadata_snapshots(namespace,client_id,digest,jwks_digest,thumbprint,expires_at) VALUES($1,$2,$3,$4,$5,to_timestamp($6)) ON CONFLICT DO NOTHING`,
           [
-            randomUUID(),
             this.namespace,
             v.clientId,
+            v.metadataDigest,
+            v.jwksDigest,
+            v.thumbprint,
+            v.metadataExpires,
+          ],
+        );
+        const grant = (
+          await c.query(
+            `INSERT INTO machine_grants(id,namespace,client_id,resource,scopes,policy_generation,grant_key) VALUES($1,$2,$3,$4,$5,$6,$7)
+        ON CONFLICT(namespace,grant_key) DO UPDATE SET policy_generation=EXCLUDED.policy_generation RETURNING *`,
+            [
+              randomUUID(),
+              this.namespace,
+              v.clientId,
+              resource,
+              requested,
+              p.generation,
+              digest(JSON.stringify([v.clientId, resource, requested])),
+            ],
+          )
+        ).rows[0];
+        if (
+          grant.client_id !== v.clientId ||
+          grant.resource !== resource ||
+          JSON.stringify(grant.scopes) !== JSON.stringify(requested)
+        )
+          fail("grant_integrity_failure", 503);
+        if (!grant.enabled) return deny("unauthorized_client", p.generation);
+        const token = randomBytes(32).toString("base64url");
+        const now = Math.floor(Date.now() / 1000);
+        await c.query(
+          `INSERT INTO access_tokens(digest,namespace,client_id,grant_id,resource,scopes,issued_at,expires_at,client_generation,grant_generation,policy_generation)
+        VALUES($1,$2,$3,$4,$5,$6,to_timestamp($7),to_timestamp($8),$9,$10,$11)`,
+          [
+            digest(token),
+            this.namespace,
+            v.clientId,
+            grant.id,
             resource,
             requested,
+            now,
+            now + p.ttl,
+            client.generation,
+            grant.generation,
             p.generation,
-            digest(JSON.stringify([v.clientId, resource, requested])),
           ],
-        )
-      ).rows[0];
-      if (
-        grant.client_id !== v.clientId ||
-        grant.resource !== resource ||
-        JSON.stringify(grant.scopes) !== JSON.stringify(requested)
-      )
-        fail("grant_integrity_failure", 503);
-      if (!grant.enabled) return deny("unauthorized_client", p.generation);
-      const token = randomBytes(32).toString("base64url");
-      const now = Math.floor(Date.now() / 1000);
-      await c.query(
-        `INSERT INTO access_tokens(digest,namespace,client_id,grant_id,resource,scopes,issued_at,expires_at,client_generation,grant_generation,policy_generation)
-        VALUES($1,$2,$3,$4,$5,$6,to_timestamp($7),to_timestamp($8),$9,$10,$11)`,
-        [
-          digest(token),
-          this.namespace,
-          v.clientId,
-          grant.id,
-          resource,
-          requested,
-          now,
-          now + p.ttl,
-          client.generation,
-          grant.generation,
-          p.generation,
-        ],
-      );
-      await this.audit(c, v.clientId, "issued", p.generation);
-      return {
-        token: {
-          access_token: token,
-          token_type: "Bearer" as const,
-          expires_in: p.ttl as number,
-          scope: requested.join(" "),
-        },
-      };
-    });
+        );
+        await this.audit(c, v.clientId, "issued", p.generation);
+        return {
+          token: {
+            access_token: token,
+            token_type: "Bearer" as const,
+            expires_in: p.ttl as number,
+            scope: requested.join(" "),
+          },
+        };
+      },
+      v,
+    );
     if ("error" in result)
       throw new ProtocolError(
         result.error!,
@@ -414,11 +425,15 @@ export class PostgresStore {
     };
   }
   async rejectVerified(v: VerifiedClient, code: string): Promise<never> {
-    const accepted = await this.transaction(v.clientId, async (c) => {
-      if (!(await this.replay(c, v))) return false;
-      await this.audit(c, v.clientId, code);
-      return true;
-    });
+    const accepted = await this.transaction(
+      v.clientId,
+      async (c) => {
+        if (!(await this.replay(c, v))) return false;
+        await this.audit(c, v.clientId, code);
+        return true;
+      },
+      v,
+    );
     return fail(accepted ? code : "invalid_client", accepted ? 400 : 401);
   }
   async invalidateForRecovery(): Promise<void> {
@@ -429,15 +444,19 @@ export class PostgresStore {
     );
   }
   async revoke(v: VerifiedClient, token: string): Promise<void> {
-    const ok = await this.transaction(v.clientId, async (c) => {
-      if (!(await this.replay(c, v))) return false;
-      await c.query(
-        "UPDATE access_tokens SET revoked_at=now() WHERE namespace=$1 AND client_id=$2 AND digest=$3",
-        [this.namespace, v.clientId, digest(token)],
-      );
-      await this.audit(c, v.clientId, "revocation");
-      return true;
-    });
+    const ok = await this.transaction(
+      v.clientId,
+      async (c) => {
+        if (!(await this.replay(c, v))) return false;
+        await c.query(
+          "UPDATE access_tokens SET revoked_at=now() WHERE namespace=$1 AND client_id=$2 AND digest=$3",
+          [this.namespace, v.clientId, digest(token)],
+        );
+        await this.audit(c, v.clientId, "revocation");
+        return true;
+      },
+      v,
+    );
     if (!ok) fail("invalid_client", 401);
   }
   async blockClient(clientId: string, blocked: boolean): Promise<void> {
