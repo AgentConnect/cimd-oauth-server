@@ -1,0 +1,72 @@
+name: cimd-oauth-reference
+services:
+  postgres:
+    image: postgres:16.13-bookworm@sha256:472efd9a66f2b2f1a5aeb18b28de74332e6ef88c2b93a1a5d812fb6db67a5f60
+    environment:
+      POSTGRES_DB: cimd
+      POSTGRES_USER: cimd
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cimd -d cimd"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+  as:
+    build: .
+    image: cimd-oauth-server:local
+    environment:
+      DATABASE_URL: ${DATABASE_URL:?Set runtime DATABASE_URL}
+      OAUTH_ISSUER: ${OAUTH_ISSUER:?Set OAUTH_ISSUER}
+      OAUTH_SCOPES: ${OAUTH_SCOPES:?Set OAUTH_SCOPES}
+      NODE_ENV: production
+      PORT: 8443
+      BIND_HOST: 0.0.0.0
+      TLS_KEY_FILE: /run/tls/key.pem
+      TLS_CERT_FILE: /run/tls/cert.pem
+    volumes:
+      - ${AS_TLS_DIRECTORY:?Set AS_TLS_DIRECTORY}:/run/tls:ro
+    ports: ["127.0.0.1:8443:8443"]
+    depends_on:
+      postgres: { condition: service_healthy }
+    init: true
+  rs:
+    image: cimd-oauth-server:local
+    command: ["node", "dist/examples/minimal-mcp-server/main.js"]
+    environment:
+      OAUTH_ISSUER: ${OAUTH_ISSUER:?Set OAUTH_ISSUER}
+      OAUTH_SCOPES: ${OAUTH_SCOPES:?Set OAUTH_SCOPES}
+      MCP_RESOURCE: ${MCP_RESOURCE:?Set MCP_RESOURCE}
+      INTROSPECTION_ENDPOINT: ${INTROSPECTION_ENDPOINT:?Set INTROSPECTION_ENDPOINT}
+      RS_ID: ${RS_ID:?Set RS_ID}
+      RS_SECRET: ${RS_SECRET:?Set RS_SECRET}
+      NODE_ENV: production
+      PORT: 9443
+      BIND_HOST: 0.0.0.0
+      TLS_KEY_FILE: /run/tls/key.pem
+      TLS_CERT_FILE: /run/tls/cert.pem
+    volumes:
+      - ${RS_TLS_DIRECTORY:?Set RS_TLS_DIRECTORY}:/run/tls:ro
+    ports: ["127.0.0.1:9443:9443"]
+    init: true
+  migrate:
+    profiles: [setup]
+    image: cimd-oauth-server:local
+    command: ["node", "dist/scripts/migrate.js"]
+    env_file: ${CIMD_ENV_FILE:-.env}
+    environment:
+      DATABASE_URL: ${DATABASE_ADMIN_URL:?Set DATABASE_ADMIN_URL}
+    depends_on:
+      postgres: { condition: service_healthy }
+  configure:
+    profiles: [setup]
+    image: cimd-oauth-server:local
+    command: ["node", "dist/scripts/configure.js"]
+    env_file: ${CIMD_ENV_FILE:-.env}
+    environment:
+      DATABASE_URL: ${DATABASE_ADMIN_URL:?Set DATABASE_ADMIN_URL}
+    depends_on:
+      postgres: { condition: service_healthy }
+volumes:
+  postgres-data:

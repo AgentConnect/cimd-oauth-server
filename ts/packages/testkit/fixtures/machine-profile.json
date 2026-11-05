@@ -1,0 +1,39 @@
+{
+  "fixture_version": 1,
+  "issuer": "https://auth.example.test",
+  "resource": "https://mcp.example.test/mcp",
+  "client_id": "https://identity.example.test/client.json",
+  "assertion": {
+    "alg": "ES256",
+    "iss": "https://identity.example.test/client.json",
+    "sub": "https://identity.example.test/client.json",
+    "aud": "https://auth.example.test",
+    "max_lifetime_seconds": 60,
+    "clock_tolerance_seconds": 5
+  },
+  "token_form_fields": [
+    "grant_type",
+    "client_id",
+    "client_assertion_type",
+    "client_assertion",
+    "resource",
+    "scope"
+  ],
+  "client_assertion_type": "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
+  "grant_type": "client_credentials",
+  "scope": "agent.self.read catalog.read",
+  "token_response": {
+    "token_type": "Bearer",
+    "expires_in": 300,
+    "scope": "agent.self.read catalog.read"
+  },
+  "tools": {
+    "identity_get": "agent.self.read",
+    "catalog_list": "catalog.read"
+  },
+  "mcp": {
+    "sdk": "@modelcontextprotocol/sdk@1.29.0",
+    "lane": "initialize",
+    "protocol_version": "2025-11-25"
+  }
+}

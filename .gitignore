@@ -1,0 +1,12 @@
+node_modules/
+.pnpm-store/
+.artifacts/
+.local/
+.env
+.env.*
+!.env.example
+coverage/
+dist/
+lib/
+target/
+*.log

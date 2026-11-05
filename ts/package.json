@@ -1,0 +1,39 @@
+{
+  "name": "@agentconnect/cimd-oauth-server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json && node scripts/copy-assets.mjs",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "tsx --test tests/*.test.ts",
+    "test:postgres": "bash scripts/test-postgres.sh",
+    "migrate": "node --env-file-if-exists=.env --import tsx scripts/migrate.ts",
+    "configure": "node --env-file-if-exists=.env --import tsx scripts/configure.ts",
+    "start:as": "node --env-file-if-exists=.env --import tsx examples/authorization-server/main.ts",
+    "start:mcp": "node --env-file-if-exists=.env --import tsx examples/minimal-mcp-server/main.ts",
+    "identity:init": "node --env-file-if-exists=.env --import tsx examples/self-hosted-identity/init.ts",
+    "start:identity": "node --env-file-if-exists=.env --import tsx examples/self-hosted-identity/main.ts",
+    "admin": "node --env-file-if-exists=.env --import tsx scripts/admin.ts",
+    "format:check": "prettier --check packages examples scripts tests docs package.json tsconfig.json compose.yaml"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.29.0",
+    "express": "5.3.0",
+    "ipaddr.js": "2.5.0",
+    "jose": "6.2.15",
+    "pg": "8.23.1",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@types/express": "5.0.6",
+    "@types/node": "22.19.15",
+    "@types/pg": "8.16.0",
+    "prettier": "3.6.2",
+    "tsx": "4.21.0",
+    "typescript": "5.9.3"
+  }
+}
