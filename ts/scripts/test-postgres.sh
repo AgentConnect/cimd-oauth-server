@@ -29,13 +29,17 @@ elif [[ "${1:-}" == "--shared-protocol" ]]; then
   ./node_modules/.bin/tsx --tsconfig "${3:?Pass Harness source root}/tsconfig.base.json" scripts/shared-protocol-component.ts "${2:?Pass identity source root}" "${3}" "${4:?Pass PAP source root}"
 elif [[ "${1:-}" == "--rotation-native" ]]; then
   ./node_modules/.bin/tsx --tsconfig "${3:?Pass Harness source root}/tsconfig.base.json" scripts/rotation-native-component.ts "${2:?Pass identity source root}" "${3}"
-elif [[ "${1:-}" == "--mcp-product" ]]; then
+elif [[ "${1:-}" == "--mcp-product" || "${1:-}" == "--shared-product" ]]; then
   identity_root="${2:?Pass ANP Identity source root}"
   harness_root="${3:?Pass Harness source root}"
   product_config="${4:?Pass the explicit source Vitest configuration}"
   : "${DSH_IDENTITY_USER_SERVICE_SOURCE:?Pass the strict B source root in the environment}"
   : "${DSH_IDENTITY_PYTHON:?Pass the explicit B component Python in the environment}"
-  product_test="$identity_root/packages/dsh-anp-identity/test/mcp-product-live.spec.ts"
+  if [[ "$1" == "--mcp-product" ]]; then
+    product_test="$identity_root/packages/dsh-anp-identity/test/mcp-product-live.spec.ts"
+  else
+    product_test="$identity_root/packages/dsh-anp-identity/test/shared-product-protocol-live.spec.ts"
+  fi
   test -f "$product_test"
   test -f "$product_config"
   export DSH_MCP_PRODUCT_HARNESS_SOURCE="$harness_root"
