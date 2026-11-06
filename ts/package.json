@@ -29,6 +29,7 @@
     "test:process-recovery": "bash scripts/test-postgres.sh --process-recovery",
     "test:shared-protocol": "bash scripts/test-postgres.sh --shared-protocol",
     "test:rotation-native": "bash scripts/test-postgres.sh --rotation-native",
+    "test:mcp-product": "bash scripts/test-postgres.sh --mcp-product",
     "start:as:built": "node --env-file-if-exists=.env dist/examples/authorization-server/main.js",
     "start:mcp:built": "node --env-file-if-exists=.env dist/examples/minimal-mcp-server/main.js",
     "migrate:built": "node --env-file-if-exists=.env dist/scripts/migrate.js",
