@@ -56,7 +56,7 @@
     "tsx": "4.21.0",
     "typescript": "5.9.3"
   },
-  "license": "UNLICENSED",
+  "license": "Apache-2.0",
   "files": [
     "dist/packages/oauth-core",
     "dist/packages/oauth-as",

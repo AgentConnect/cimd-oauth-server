@@ -1,6 +1,6 @@
 # Repository instructions
 
-This repository is private. Do not publish source, packages or images publicly.
+This repository is public under Apache-2.0. Publishing packages or container images requires an explicit request.
 
 Follow [AWiki coding rules](../awiki-harness/rules/ai-coding-rules.md), [verification policy](../awiki-harness/rules/verification-policy.md) and [dependency source rules](../awiki-harness/rules/dependency-sources.md).
 

@@ -1,8 +1,8 @@
 # 私有运行制品
 
-从精确源码构建后，`npm run pack:runtime -- <private-output-directory>` 只打入明确白名单中的 built service modules、SQL migration、独立 AS/RS 启动器、configure/admin 工具、公开 `.env.example` 和依赖许可清单。它不包含 `.artifacts/`、`.local/`、原生日志、真实 `.env`、源码测试、测试数据库或 native/source integration fixtures。源码和完整证据另由 private Git/源码候选交付。
+从精确源码构建后，`npm run pack:runtime -- <private-output-directory>` 只打入明确白名单中的 built service modules、SQL migration、独立 AS/RS 启动器、configure/admin 工具、公开 `.env.example` 和依赖许可清单。它不包含 `.artifacts/`、`.local/`、原生日志、真实 `.env`、源码测试、测试数据库或 native/source integration fixtures。源码由公开 Git 仓库交付；运行配置和执行证据仍按各自保密边界保存。
 
-制品为 private / UNLICENSED，禁止公开发布。`oauth4webapi`、`oidc-provider` 等独立互通库仅 dev/test，不是本 AS 的运行时依赖；生产依赖及各自 notice 随正常依赖安装保留，清单见 `dependency-licenses.json`。
+本项目代码采用 Apache-2.0，许可证随运行包提供。`private: true` 保留用于防止误发 npm，本次不发布包或镜像。`oauth4webapi`、`oidc-provider` 等独立互通库仅 dev/test，不是本 AS 的运行时依赖；生产依赖及各自 notice 随正常依赖安装保留，清单见 `dependency-licenses.json`。
 
 制品带从已提交 package-lock 原样派生的 npm-shrinkwrap，安装应使用 npm ci --omit=dev --ignore-scripts，锁定完整运行依赖而不是重算浮动传递版本。临时派生只在pack期间存在，结束后删除，不改变源码依赖来源。
 
