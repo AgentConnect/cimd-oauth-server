@@ -21,3 +21,5 @@ AS 与 MCP/RS 在独立进程运行。migration/config/admin 使用受控管理�
 `:built` 命令对应 tarball 中实际存在的 JavaScript。开发用 `tsx`、原生 source fixtures、`npm test:*` 等命令只属于完整源码工作区；运行制品不携带或宣称可运行那些开发入口。服务镜像由源码的 Dockerfile 单独构建，不要求从此 runtime tarball 重建源码容器。
 
 候选验证仅检查完整性、运行时导入/迁移资产、缺配置 fail-closed 和受限拥有者组件证据；不自动执行发布前全套测试、不发布 registry、不替代 System/产品 E2E 或实际部署验收。每个包和镜像的 source commit/lock/digest 由其对应 provenance 记录，旧 b65 镜像不会重标为新 source。
+
+已认证的 `server/discover` 协议版本探测与 `initialize` 一样不要求业务工具 scope；兼容 handler 在旧 SDK 的 HTTP 版本头校验之前返回标准 MethodNotFound，允许新版客户端显式按协议回落到 initialize。未认证请求仍返回 401，未知非握手方法及 scope 不足的 tools/call 仍拒绝，绝不把 403 当成版本不支持。

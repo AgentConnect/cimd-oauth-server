@@ -109,9 +109,13 @@ export function authorizeOperation(
   if (principal[trusted] !== true || principal.expires <= Date.now() / 1000)
     fail("invalid_token", 401);
   if (
-    ["initialize", "notifications/initialized", "ping", "tools/list"].includes(
-      method,
-    )
+    [
+      "server/discover",
+      "initialize",
+      "notifications/initialized",
+      "ping",
+      "tools/list",
+    ].includes(method)
   )
     return;
   if (

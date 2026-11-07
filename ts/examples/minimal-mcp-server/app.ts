@@ -51,6 +51,21 @@ export function createMcpApp(verifier: TokenVerifier) {
         message.method as string,
         typeof params.name === "string" ? params.name : undefined,
       );
+      // Reject the modern probe at the RPC layer before the legacy transport
+      // rejects its newer protocol-version header at the HTTP layer.
+      if (message.method === "server/discover") {
+        if (
+          message.jsonrpc !== "2.0" ||
+          (typeof message.id !== "string" && typeof message.id !== "number")
+        )
+          fail("invalid_request");
+        res.json({
+          jsonrpc: "2.0",
+          id: message.id,
+          error: { code: -32601, message: "Method not found" },
+        });
+        return;
+      }
       const server = new Server(
         { name: "cimd-machine-mcp", version: "0.1.0" },
         { capabilities: { tools: {} } },
