@@ -10,6 +10,8 @@ import {
 import { fail, ProtocolError } from "../oauth-core/errors.js";
 import { httpsUrl } from "../oauth-core/parse.js";
 
+export { AnpVerifier, publicDidResolver } from "../anp/index.js";
+
 export interface Caller {
   protocol: "anp" | "mcp" | "pap";
   subject: string;
