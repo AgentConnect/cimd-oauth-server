@@ -1,5 +1,7 @@
 # Machine profile contract
 
+The standalone [PAP 0.3 hello demo](../ts/docs/pap-demo.md) shares CIMD/JWKS loading with this machine profile. It authenticates signed-out Sessions on a separate Company origin and does not use machine Access Tokens.
+
 ## Fixed surface
 
 The issuer and resource are operator-configured HTTPS identifiers. Exact client identity strings are retained; URL parsing never merges two client identifiers. This reference policy limits URLs to ASCII URI form, 2048 bytes, explicit CIMD path, no userinfo/fragment/query/dot segments/backslash. Percent-encoded non-ASCII paths remain possible. JWKS must use the same HTTPS origin as CIMD; this is a local policy, not a claim that CIMD universally requires same-origin JWKS. Only public P-256 signing keys with unique nonempty `kid` are accepted. JWKS and assertion key IDs share the published 1024-character bound, reject blank/control-character values, and remain exact opaque strings; the 64 KiB document, eight-key and 16 KiB JWT limits remain independent.

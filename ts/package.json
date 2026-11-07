@@ -36,9 +36,16 @@
     "migrate:built": "node --env-file-if-exists=.env dist/scripts/migrate.js",
     "configure:built": "node --env-file-if-exists=.env dist/scripts/configure.js",
     "admin:built": "node --env-file-if-exists=.env dist/scripts/admin.js",
-    "pack:runtime": "node scripts/pack-runtime.mjs"
+    "pack:runtime": "node scripts/pack-runtime.mjs",
+    "start:pap": "node --env-file-if-exists=.env --import tsx examples/minimal-pap-server/main.ts",
+    "test:pap-demo": "NODE_ENV=test tsx scripts/pap-demo.ts",
+    "start:combined": "node --env-file-if-exists=.env --import tsx examples/combined-server/cli.ts",
+    "start:combined:built": "node --env-file-if-exists=.env dist/examples/combined-server/cli.js",
+    "test:website": "bash scripts/test-postgres.sh --website",
+    "test:website-native": "bash scripts/test-postgres.sh --website-native"
   },
   "dependencies": {
+    "@awiki/anp-typescript-sdk": "0.9.4",
     "@modelcontextprotocol/sdk": "1.29.0",
     "express": "5.3.0",
     "ipaddr.js": "2.5.0",
@@ -72,6 +79,10 @@
     "docs/runtime-package.md",
     "docs/dependency-licenses.json",
     ".env.example",
-    "npm-shrinkwrap.json"
+    "npm-shrinkwrap.json",
+    "dist/packages/anp",
+    "dist/packages/pap",
+    "dist/packages/service-agent",
+    "dist/examples/combined-server"
   ]
 }

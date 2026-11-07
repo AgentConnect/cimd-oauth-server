@@ -10,6 +10,7 @@ import {
   authorizeOperation,
   protectedResourceMetadata,
   TOOL_SCOPES,
+  type VerifiedPrincipal,
 } from "../../packages/oauth-rs/index.js";
 import { ProtocolError, fail } from "../../packages/oauth-core/errors.js";
 import {
@@ -18,11 +19,35 @@ import {
   object,
   strictJson,
 } from "../../packages/oauth-core/parse.js";
-export function createMcpApp(verifier: TokenVerifier) {
+export interface McpTool {
+  scope: string;
+  description: string;
+  inputSchema: {
+    type: "object";
+    properties?: Record<string, unknown>;
+    required?: string[];
+    additionalProperties?: boolean;
+  };
+  readOnly: boolean;
+  execute(
+    args: Record<string, unknown>,
+    principal: VerifiedPrincipal,
+  ): Promise<unknown>;
+}
+export function createMcpApp(
+  verifier: TokenVerifier,
+  tools: Record<string, McpTool> = {},
+) {
   const app = express();
   app.disable("x-powered-by");
   app.set("trust proxy", false);
   const c = verifier.config;
+  const toolScopes = {
+    ...TOOL_SCOPES,
+    ...Object.fromEntries(
+      Object.entries(tools).map(([name, tool]) => [name, tool.scope]),
+    ),
+  };
   const metadata = metadataPath(c.resource, "oauth-protected-resource");
   app.get(metadata, (_req, res) =>
     res.json(protectedResourceMetadata(c.resource, c.issuer, c.allowedScopes)),
@@ -50,7 +75,23 @@ export function createMcpApp(verifier: TokenVerifier) {
         principal,
         message.method as string,
         typeof params.name === "string" ? params.name : undefined,
+        toolScopes,
       );
+      // Reject the modern probe at the RPC layer before the legacy transport
+      // rejects its newer protocol-version header at the HTTP layer.
+      if (message.method === "server/discover") {
+        if (
+          message.jsonrpc !== "2.0" ||
+          (typeof message.id !== "string" && typeof message.id !== "number")
+        )
+          fail("invalid_request");
+        res.json({
+          jsonrpc: "2.0",
+          id: message.id,
+          error: { code: -32601, message: "Method not found" },
+        });
+        return;
+      }
       const server = new Server(
         { name: "cimd-machine-mcp", version: "0.1.0" },
         { capabilities: { tools: {} } },
@@ -60,27 +101,34 @@ export function createMcpApp(verifier: TokenVerifier) {
         catalog_list: "Read the fixed demonstration catalog",
       };
       server.setRequestHandler(ListToolsRequestSchema, async () => ({
-        tools: Object.entries(TOOL_SCOPES)
+        tools: Object.entries(toolScopes)
           .filter(([, scope]) => principal.scopes.includes(scope))
           .map(([name]) => ({
             name,
-            description: descriptions[name],
-            inputSchema: {
+            description: tools[name]?.description ?? descriptions[name],
+            inputSchema: tools[name]?.inputSchema ?? {
               type: "object" as const,
               properties: {},
               additionalProperties: false,
             },
             annotations: {
-              readOnlyHint: true,
+              readOnlyHint: tools[name]?.readOnly ?? true,
               destructiveHint: false,
               openWorldHint: false,
             },
           })),
       }));
       server.setRequestHandler(CallToolRequestSchema, async (request) => {
-        authorizeOperation(principal, "tools/call", request.params.name);
-        const result =
-          request.params.name === "identity_get"
+        authorizeOperation(
+          principal,
+          "tools/call",
+          request.params.name,
+          toolScopes,
+        );
+        const custom = tools[request.params.name];
+        const result = custom
+          ? await custom.execute(request.params.arguments ?? {}, principal)
+          : request.params.name === "identity_get"
             ? {
                 client_id: principal.clientId,
                 subject: principal.subject,

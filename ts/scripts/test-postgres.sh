@@ -15,7 +15,11 @@ mkdir -m 700 "$test_root/socket"
 export DATABASE_URL="postgresql:///cimd_component?host=$test_root/socket"
 export NODE_ENV=test
 npm run migrate
-if [[ "${1:-}" == "--dsh-native" ]]; then
+if [[ "${1:-}" == "--website-native" ]]; then
+  ./node_modules/.bin/tsx --test tests/native-website.component.ts
+elif [[ "${1:-}" == "--website" ]]; then
+  ./node_modules/.bin/tsx --test tests/service-agent.component.ts
+elif [[ "${1:-}" == "--dsh-native" ]]; then
   ./node_modules/.bin/tsx --tsconfig "${3:?Pass the Harness source root}/tsconfig.base.json" scripts/dsh-native-component.ts "${2:?Pass the ANP Identity source root}" "${3:?Pass the Harness source root}"
 elif [[ "${1:-}" == "--independent-client" ]]; then
   ./node_modules/.bin/tsx --test tests/independent-client.component.ts

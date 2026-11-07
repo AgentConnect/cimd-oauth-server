@@ -1,6 +1,6 @@
-# Private CIMD OAuth runtime package
+# Service Agent TypeScript runtime
 
-This package contains the built reference authorization server, independent resource verifier, PostgreSQL migrations and two-tool MCP application. It is private/closed-source and must not be published publicly. Third-party dependencies retain their own licenses.
+This Apache-2.0 source package contains the reference authorization server, independent resource verifier, PostgreSQL migrations, MCP application, PAP demo and ANP authentication module. The importable repository-root package also offers the combined three-protocol website service; see [service-agent.md](docs/service-agent.md). npm packages and container images are not published automatically. Third-party dependencies retain their own licenses.
 
 The source repository includes the complete tests and implementation evidence. The runtime tarball deliberately includes only built service modules, migration/config/admin launchers, the public configuration template and required license documentation; local test logs, execution artifacts, test-only AS products and native/source integration fixtures are excluded.
 

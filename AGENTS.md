@@ -6,7 +6,7 @@ Follow [AWiki coding rules](../awiki-harness/rules/ai-coding-rules.md), [verific
 
 ## Scope
 
-CIMD/private_key_jwt/client_credentials authorization server, resource verifier and MCP example. Current TypeScript implementation belongs under ts/; rust/ is reserved for future work.
+CIMD/private_key_jwt/client_credentials authorization server, resource verifier and MCP example, plus the standalone PAP 0.3 signed-out hello demo. Current TypeScript implementation belongs under ts/; rust/ is reserved for future work.
 
 The owning implementation plan is in `../awiki-plan/20261104-dsh-shared-agent-identity/modules/`. Follow the current local-signing-only scope. Preserve user changes and other agents' file ownership. Commit messages, code comments, logs and errors use English; planning prose uses Chinese.
 
