@@ -49,7 +49,10 @@
     "ts/dist/packages",
     "ts/dist/examples",
     "LICENSE",
-    "README.md"
+    "README.md",
+    "ts/dist/scripts/migrate.js",
+    "ts/dist/scripts/configure.js",
+    "ts/dist/scripts/admin.js"
   ],
   "scripts": {
     "build": "tsc -p ts/tsconfig.json && node ts/scripts/copy-assets.mjs",
