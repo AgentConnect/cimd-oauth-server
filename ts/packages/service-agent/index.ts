@@ -146,6 +146,10 @@ export function createServiceAgent(options: {
   const app = express();
   app.disable("x-powered-by");
   app.set("trust proxy", false);
+  app.use(
+    ["/anp", "/agents/official/ad.json"],
+    express.raw({ type: () => true, limit: "16kb", inflate: false }),
+  );
   const invoke = async (
     definition: (typeof definitions)[number],
     input: unknown,

@@ -1,6 +1,7 @@
 /** Actual local C/A identity, DSH ANP/PAP clients, HTTPS AS/RS and PostgreSQL. */
 import assert from "node:assert/strict";
 import { randomBytes, createHash } from "node:crypto";
+import { readFile } from "node:fs/promises";
 import { pathToFileURL, fileURLToPath } from "node:url";
 import { resolve, join } from "node:path";
 import { Pool } from "pg";
@@ -94,7 +95,7 @@ export async function nativeWebsiteRoundTrip() {
     await store.provisionResourceServer("native-website", "n".repeat(48), [
       origin + "/mcp",
     ]);
-    const catalog: ProtocolDocument[] = [
+    let catalog: ProtocolDocument[] = [
       {
         version: "1.1",
         language: "en",
@@ -103,6 +104,18 @@ export async function nativeWebsiteRoundTrip() {
         sourceUrl: origin + "/specs/1.1/white-paper",
       },
     ];
+    if (process.env.SERVICE_AGENT_WEBSITE_CATALOG_FILE) {
+      catalog = JSON.parse(
+        await readFile(process.env.SERVICE_AGENT_WEBSITE_CATALOG_FILE, "utf8"),
+      );
+    }
+    const expectedContent = catalog.find(
+      (document) =>
+        document.version === "1.1" &&
+        document.language === "en" &&
+        document.document === "white-paper",
+    )?.content;
+    assert.ok(expectedContent);
     const services = await createWebsiteServices(catalog, pool);
     app = createServiceAgent({
       origin,
@@ -206,7 +219,17 @@ export async function nativeWebsiteRoundTrip() {
       operationRef: operation("protocol_get"),
       path: { version: "1.1", document: "white-paper" },
     });
-    assert.equal(document.content.content, "# Native ANP 1.1");
+    assert.equal(document.content.content, expectedContent);
+    const missingVersion = await tools
+      .get("anp_call")
+      .execute(
+        {
+          operationRef: operation("protocol_get"),
+          path: { version: "9.9", document: "white-paper" },
+        },
+        { agent: {} },
+      );
+    assert.equal(missingVersion.ok, false);
     const receipt = await invoke("anp_call", {
       operationRef: operation("message_create"),
       body: { message: "native ANP" },
@@ -219,15 +242,13 @@ export async function nativeWebsiteRoundTrip() {
       grantId: grant.id,
       expectedVersion: grant.version,
     });
-    const revoked = await tools
-      .get("anp_call")
-      .execute(
-        {
-          operationRef: operation("message_create"),
-          body: { message: "revoked ANP" },
-        },
-        { agent: {} },
-      );
+    const revoked = await tools.get("anp_call").execute(
+      {
+        operationRef: operation("message_create"),
+        body: { message: "revoked ANP" },
+      },
+      { agent: {} },
+    );
     assert.equal(revoked.ok, false);
     assert.equal(
       (
@@ -268,7 +289,7 @@ export async function nativeWebsiteRoundTrip() {
     assert.equal(papDocument.status, 200);
     assert.equal(
       JSON.parse(Buffer.from(papDocument.body).toString()).content,
-      "# Native ANP 1.1",
+      expectedContent,
     );
     const papReceipt = await pap.dispatchPap(session.sessionRef, {
       url: origin + "/pap/api/messages",
@@ -339,7 +360,7 @@ export async function nativeWebsiteRoundTrip() {
     assert.equal(mcpDoc.status, 200);
     assert.equal(
       JSON.parse(JSON.parse(mcpDoc.body).result.content[0].text).content,
-      "# Native ANP 1.1",
+      expectedContent,
     );
     const mcpReceipt = await call("message_create", { message: "native MCP" });
     assert.equal(mcpReceipt.status, 200);

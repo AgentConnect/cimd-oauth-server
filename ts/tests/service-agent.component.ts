@@ -146,6 +146,27 @@ test("one HTTPS service serves ANP, PAP and CIMD OAuth MCP with persisted messag
     );
     const ad = await anp("/agents/official/ad.json");
     assert.equal(ad.status, 200);
+    const unsignedBody = generateHttpSignatureHeaders(
+      did.didDocument,
+      origin + "/agents/official/ad.json",
+      "GET",
+      did.keys["key-1"]!.privateKeyPem,
+    );
+    assert.equal(
+      (
+        await tls.http(
+          origin + "/agents/official/ad.json",
+          "{}",
+          {
+            ...unsignedBody,
+            "content-type": "application/json",
+            "content-length": "2",
+          },
+          "GET",
+        )
+      ).status,
+      401,
+    );
     assert.equal(JSON.parse(ad.body).did, undefined);
     assert.equal((await anp("/anp/openapi.json")).status, 200);
     assert.equal((await anp("/anp/catalog.json")).status, 200);
