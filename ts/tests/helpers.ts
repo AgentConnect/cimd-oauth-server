@@ -27,7 +27,7 @@ export async function tlsFixture() {
       "-subj",
       "/CN=identity.test",
       "-addext",
-      "subjectAltName=DNS:identity.test,DNS:other.test,DNS:auth.test,DNS:mcp.test,DNS:localhost,IP:127.0.0.1",
+      "subjectAltName=DNS:identity.example,DNS:identity.test,DNS:other.test,DNS:auth.test,DNS:mcp.test,DNS:localhost,IP:127.0.0.1",
     ],
     { stdio: "ignore" },
   );
@@ -52,6 +52,7 @@ export async function tlsFixture() {
       addresses: Object.fromEntries(
         [
           "identity.test",
+          "identity.example",
           "other.test",
           "auth.test",
           "mcp.test",
