@@ -36,7 +36,9 @@
     "migrate:built": "node --env-file-if-exists=.env dist/scripts/migrate.js",
     "configure:built": "node --env-file-if-exists=.env dist/scripts/configure.js",
     "admin:built": "node --env-file-if-exists=.env dist/scripts/admin.js",
-    "pack:runtime": "node scripts/pack-runtime.mjs"
+    "pack:runtime": "node scripts/pack-runtime.mjs",
+    "start:pap": "node --env-file-if-exists=.env --import tsx examples/minimal-pap-server/main.ts",
+    "test:pap-demo": "NODE_ENV=test tsx scripts/pap-demo.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.29.0",
