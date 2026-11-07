@@ -40,7 +40,9 @@
     "start:pap": "node --env-file-if-exists=.env --import tsx examples/minimal-pap-server/main.ts",
     "test:pap-demo": "NODE_ENV=test tsx scripts/pap-demo.ts",
     "start:combined": "node --env-file-if-exists=.env --import tsx examples/combined-server/cli.ts",
-    "start:combined:built": "node --env-file-if-exists=.env dist/examples/combined-server/cli.js"
+    "start:combined:built": "node --env-file-if-exists=.env dist/examples/combined-server/cli.js",
+    "test:website": "bash scripts/test-postgres.sh --website",
+    "test:website-native": "bash scripts/test-postgres.sh --website-native"
   },
   "dependencies": {
     "@awiki/anp-typescript-sdk": "0.9.4",

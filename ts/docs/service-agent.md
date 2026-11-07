@@ -58,3 +58,11 @@ including the actual machine token/introspection path and persistent messages.
 `node --import tsx --test tests/anp.test.ts tests/mcp-negotiation.test.ts tests/pap-session.test.ts`
 covers ANP rejection paths and existing MCP/PAP compatibility. These are component
 checks, separate from native Host and deployed website acceptance.
+
+The native cross-repository check is `npm run test:website-native` from `ts/`.
+It loads the actual dsh-anp plugin in a Cordis consumer context, approves the
+request through the existing identity manager, exercises all four tools and
+verifies revocation prevents a later message. The same native identity supplies
+PAP Delegation/Session proofs and the MCP client assertion through C. Public
+DID/CIMD publication and network mapping are isolated test fixtures; this is not
+User Service registration, a browser UI check or a deployed-host result.

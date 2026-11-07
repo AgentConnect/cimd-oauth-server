@@ -179,7 +179,7 @@ export function createServiceAgent(options: {
       protocol_version: "0.3",
       organization: {
         name: "ANP Official Website",
-        domain: new URL(origin).hostname,
+        domain: new URL(origin).host,
       },
       apis: [{ type: "openapi", url: origin + "/pap/openapi.json" }],
     }),
