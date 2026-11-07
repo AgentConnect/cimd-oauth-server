@@ -1,4 +1,6 @@
-# CIMD 机器 OAuth 参考服务
+# Service Agent
+
+本仓库已更名为 `AgentConnect/service-agent`。新增 ANP 身份认证模块与 ANP、MCP、PAP 三协议组合入口，复用一份版本文档读取和留言业务。ANP 服务端不需要自己的 DID；接入、配置与验证见 [三协议服务说明](ts/docs/service-agent.md)。原有 CIMD 机器 OAuth 和 PAP 示例继续保留。
 
 本仓库以 [Apache-2.0](LICENSE) 开源，包含 CIMD `private_key_jwt` + `client_credentials` 授权服务器、PostgreSQL 存储、可独立运行的资源验证组件和两个只读工具的 MCP 应用。当前全部实现与工具链位于 [`ts/`](ts/)；Rust 留待后续阶段。
 

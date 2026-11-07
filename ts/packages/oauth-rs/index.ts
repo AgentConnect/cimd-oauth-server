@@ -105,6 +105,7 @@ export function authorizeOperation(
   principal: VerifiedPrincipal,
   method: string,
   tool?: string,
+  toolScopes: Readonly<Record<string, string>> = TOOL_SCOPES,
 ): void {
   if (principal[trusted] !== true || principal.expires <= Date.now() / 1000)
     fail("invalid_token", 401);
@@ -121,8 +122,8 @@ export function authorizeOperation(
   if (
     method === "tools/call" &&
     tool &&
-    TOOL_SCOPES[tool] &&
-    principal.scopes.includes(TOOL_SCOPES[tool]!)
+    toolScopes[tool] &&
+    principal.scopes.includes(toolScopes[tool]!)
   )
     return;
   fail("insufficient_scope", 403);
